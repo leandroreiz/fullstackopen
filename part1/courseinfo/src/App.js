@@ -1,23 +1,28 @@
 const App = () => {
-  const course = 'Half Stack application development';
-  const parts = [
-    {
-      name: 'Fundamentals of React',
-      exercises: 10,
-    },
-    {
-      name: 'Using props to pass data',
-      exercises: 7,
-    },
-    {
-      name: 'State of a component',
-      exercises: 14,
-    },
-  ];
+  const course = {
+    name: 'Half Stack application development',
+    parts: [
+      {
+        name: 'Fundamentals of React',
+        exercises: 10,
+      },
+      {
+        name: 'Using props to pass data',
+        exercises: 7,
+      },
+      {
+        name: 'State of a component',
+        exercises: 14,
+      },
+    ],
+  };
+
+  // destructing the object course
+  const { name, parts } = course;
 
   const Part = ({ name, exercises }) => <p>{`${name}: ${exercises}`}</p>;
 
-  const Header = ({ course }) => <h1>{course}</h1>;
+  const Header = ({ name }) => <h1>{name}</h1>;
 
   const Content = ({ parts }) => (
     <>
@@ -27,7 +32,7 @@ const App = () => {
     </>
   );
 
-  const Total = () => (
+  const Total = ({ parts }) => (
     <p>
       {`Number of exercises: ${
         parts[0].exercises + parts[1].exercises + parts[2].exercises
@@ -37,7 +42,7 @@ const App = () => {
 
   return (
     <div>
-      <Header course={course} />
+      <Header name={name} />
       <Content parts={parts} />
       <Total parts={parts} />
     </div>

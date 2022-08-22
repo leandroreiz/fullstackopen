@@ -1,6 +1,6 @@
-import axios from 'axios';
 import { useState, useEffect } from 'react';
 
+import phonebookServices from './services/phonebookServices';
 import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
@@ -12,9 +12,7 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then((response) => setPersons(response.data));
+    phonebookServices.getAll().then((contacts) => setPersons(contacts));
   }, []);
 
   const contactsToShow = !searchTerm
@@ -37,17 +35,44 @@ const App = () => {
 
   const addContact = (event) => {
     event.preventDefault();
+    const isContact = persons.find((person) => person.name === newName);
 
-    const exists = persons.find((person) => person.name === newName);
-
-    if (exists) {
-      alert(`${newName} is already added to phonebook`);
+    if (isContact) {
+      const { id, name } = isContact;
+      if (
+        window.confirm(
+          `${name} is already added to phonebook, replace the old number with a new one?`
+        )
+      ) {
+        const updatedContact = { name, number: newNumber };
+        phonebookServices.update(id, updatedContact).then((returnedContact) => {
+          setPersons(persons.map((p) => (p.id !== id ? p : returnedContact)));
+        });
+      }
       return;
     }
 
-    setPersons(persons.concat({ name: newName, number: newNumber }));
-    setNewName('');
-    setNewNumber('');
+    phonebookServices
+      .create({
+        name: newName,
+        number: newNumber,
+      })
+      .then((returnedContact) => {
+        setPersons(persons.concat(returnedContact));
+        setNewName('');
+        setNewNumber('');
+        return returnedContact;
+      });
+  };
+
+  const handleDelete = (event) => {
+    const id = event.target.value;
+    const contactToBeDeleted = persons.find((p) => p.id === +id);
+
+    if (window.confirm(`Delete ${contactToBeDeleted.name}?`)) {
+      phonebookServices.deleteContact(contactToBeDeleted.id);
+      setPersons(persons.filter((p) => p.id !== contactToBeDeleted.id));
+    }
   };
 
   return (
@@ -65,7 +90,7 @@ const App = () => {
       />
 
       <h3>Numbers</h3>
-      <Persons persons={contactsToShow} />
+      <Persons persons={contactsToShow} onClick={handleDelete} />
     </>
   );
 };

@@ -32,8 +32,13 @@
     },
     {
       "name": "Nina",
-      "number": "83-354-6804",
+      "number": "+55 31 3354-6804",
       "id": 7
+    },
+    {
+      "name": "Maria Joaquina",
+      "number": "83-123-1234",
+      "id": 8
     }
   ]
 }

@@ -4,12 +4,17 @@ import phonebookServices from './services/phonebookServices';
 import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
+import Notification from './components/Notification';
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [notification, setNotification] = useState({
+    message: null,
+    type: null,
+  });
 
   useEffect(() => {
     phonebookServices.getAll().then((contacts) => setPersons(contacts));
@@ -33,10 +38,24 @@ const App = () => {
     setSearchTerm(event.target.value);
   };
 
+  const showNotification = (message, type) => {
+    setNotification({
+      message,
+      type,
+    });
+    setTimeout(() => {
+      setNotification({
+        message: null,
+        type: null,
+      });
+    }, 5000);
+  };
+
   const addContact = (event) => {
     event.preventDefault();
     const isContact = persons.find((person) => person.name === newName);
 
+    // if contact already exists
     if (isContact) {
       const { id, name } = isContact;
       if (
@@ -45,13 +64,24 @@ const App = () => {
         )
       ) {
         const updatedContact = { name, number: newNumber };
-        phonebookServices.update(id, updatedContact).then((returnedContact) => {
-          setPersons(persons.map((p) => (p.id !== id ? p : returnedContact)));
-        });
+        phonebookServices
+          .update(id, updatedContact)
+          .then((returnedContact) => {
+            setPersons(persons.map((p) => (p.id !== id ? p : returnedContact)));
+            showNotification(`${returnedContact.name} updated`, 'success');
+          })
+          .catch((error) => {
+            showNotification(
+              `Information of ${newName} has already been removed from server`,
+              'error'
+            );
+            setPersons(persons.filter((p) => p.id !== id));
+          });
       }
       return;
     }
 
+    // add a new register
     phonebookServices
       .create({
         name: newName,
@@ -59,6 +89,10 @@ const App = () => {
       })
       .then((returnedContact) => {
         setPersons(persons.concat(returnedContact));
+
+        showNotification(`Added ${returnedContact.name}`, 'success');
+
+        // clear inputs
         setNewName('');
         setNewNumber('');
         return returnedContact;
@@ -78,8 +112,8 @@ const App = () => {
   return (
     <>
       <h2>Phonebook</h2>
+      <Notification notification={notification} />
       <Filter onChange={handleFilterChange} value={searchTerm} />
-
       <h3>Add new</h3>
       <PersonForm
         onSubmit={addContact}
@@ -88,7 +122,6 @@ const App = () => {
         newName={newName}
         newNumber={newNumber}
       />
-
       <h3>Numbers</h3>
       <Persons persons={contactsToShow} onClick={handleDelete} />
     </>

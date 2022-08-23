@@ -1,4 +1,5 @@
 const express = require('express');
+const morgan = require('morgan');
 
 let persons = [
   {
@@ -23,10 +24,25 @@ let persons = [
   },
 ];
 
+// Constants
+
 const PORT = 3001;
 const app = express();
 
+// Middleware
+
 app.use(express.json());
+
+morgan.token('data', (request) => {
+  return JSON.stringify(request.body);
+});
+app.use(
+  morgan(
+    ':method :url :status :res[content-length] - :response-time ms - :data'
+  )
+);
+
+// Routes
 
 app.get('/info', (request, response) => {
   const date = new Date();
@@ -51,7 +67,6 @@ app.get('/api/persons/:id', (request, response) => {
 
 app.post('/api/persons', (request, response) => {
   const body = request.body;
-  console.log(body);
   const id = Math.floor(Math.random() * 10000);
 
   if (!body.name || !body.number) {
@@ -80,6 +95,16 @@ app.delete('/api/persons/:id', (request, response) => {
 
   response.status(204).end();
 });
+
+// Middleware that are executed after routes
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' });
+};
+
+app.use(unknownEndpoint);
+
+// Server start
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);

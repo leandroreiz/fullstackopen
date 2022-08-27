@@ -53,7 +53,7 @@ const App = () => {
 
   const addContact = (event) => {
     event.preventDefault();
-    const isContact = persons.find((person) => person.name === newName);
+    const isContact = persons.find((p) => p.name === newName);
 
     // if contact already exists
     if (isContact) {
@@ -69,6 +69,8 @@ const App = () => {
           .then((returnedContact) => {
             setPersons(persons.map((p) => (p.id !== id ? p : returnedContact)));
             showNotification(`${returnedContact.name} updated`, 'success');
+            setNewName('');
+            setNewNumber('');
           })
           .catch((error) => {
             showNotification(
@@ -101,7 +103,7 @@ const App = () => {
 
   const handleDelete = (event) => {
     const id = event.target.value;
-    const contactToBeDeleted = persons.find((p) => p.id === +id);
+    const contactToBeDeleted = persons.find((p) => p.id === id);
 
     if (window.confirm(`Delete ${contactToBeDeleted.name}?`)) {
       phonebookServices.deleteContact(contactToBeDeleted.id);

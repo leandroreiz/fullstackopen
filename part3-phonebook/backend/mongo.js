@@ -18,12 +18,12 @@ const number = process.argv[4];
 
 const url = `mongodb+srv://admin:${password}@part3.56gbrf2.mongodb.net/phonebook?retryWrites=true&w=majority`;
 
-const phonebookSchema = mongoose.Schema({
+const personSchema = mongoose.Schema({
   name: String,
   number: String,
 });
 
-const Phonebook = mongoose.model('Phonebook', phonebookSchema);
+const Person = mongoose.model('Person', personSchema);
 
 mongoose
   .connect(url)
@@ -31,7 +31,7 @@ mongoose
     // print phonebook
     if (process.argv.length === 3) {
       console.log('phonebook:');
-      Phonebook.find().then((result) => {
+      Person.find().then((result) => {
         result.forEach((person) => {
           console.log(`${person.name} ${person.number}`);
         });
@@ -41,12 +41,12 @@ mongoose
 
     // add and print new person details
     if (process.argv.length === 5) {
-      const phonebook = new Phonebook({
+      const person = new Person({
         name,
         number,
       });
 
-      return phonebook.save().then(() => {
+      return person.save().then(() => {
         console.log(`added ${name} number ${number} to phonebook`);
         mongoose.connection.close();
       });

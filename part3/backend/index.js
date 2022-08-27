@@ -1,39 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-
+const Note = require('./models/note');
 const app = express();
+const PORT = process.env.PORT;
 
-let notes = [
-  {
-    id: 1,
-    content: 'HTML is easy',
-    date: '2022-05-30T17:30:31.098Z',
-    important: true,
-  },
-  {
-    id: 2,
-    content: 'Browser can execute only Javascript',
-    date: '2022-05-30T18:39:34.091Z',
-    important: false,
-  },
-  {
-    id: 3,
-    content: 'GET and POST are the most important methods of HTTP protocol',
-    date: '2022-05-30T19:20:14.298Z',
-    important: true,
-  },
-];
-
-const generateId = () => {
-  const maxId = notes.length > 0 ? Math.max(...notes.map((n) => n.id)) : 0;
-  return maxId + 1;
-};
-
-app.use(express.json());
-app.use(express.static('build'));
-app.use(cors());
-
-const requestLogger = (request, response, next) => {
+// Helper functions
+const requestLogger = (request, _, next) => {
   console.log('Method:', request.method);
   console.log('Path:  ', request.path);
   console.log('Body:  ', request.body);
@@ -41,27 +14,19 @@ const requestLogger = (request, response, next) => {
   next();
 };
 
+// Middleware
+app.use(express.static('build'));
+app.use(express.json());
 app.use(requestLogger);
+app.use(cors());
 
-app.get('/', (request, response) => {
+// Routes
+// Home page (redirected to static 'build' folder)
+app.get('/', (_, response) => {
   response.send('<h1>Hello Express</h1>');
 });
 
-app.get('/api/notes', (request, response) => {
-  response.json(notes);
-});
-
-app.get('/api/notes/:id', (request, response) => {
-  const id = Number(request.params.id);
-  const note = notes.find((n) => n.id === id);
-
-  if (note) {
-    response.json(note);
-  } else {
-    response.status(404).end();
-  }
-});
-
+// Create a new note
 app.post('/api/notes', (request, response) => {
   const body = request.body;
 
@@ -71,26 +36,85 @@ app.post('/api/notes', (request, response) => {
     });
   }
 
-  const note = {
+  const note = new Note({
     content: body.content,
     important: body.important || false,
     date: new Date(),
-    id: generateId(),
+  });
+
+  note.save().then((savedNote) => {
+    response.status(201).json(savedNote);
+  });
+});
+
+// Read all notes
+app.get('/api/notes', (_, response) => {
+  Note.find().then((notes) => {
+    response.json(notes);
+  });
+});
+
+// Read note by id
+app.get('/api/notes/:id', (request, response, next) => {
+  Note.findById(request.params.id)
+    .then((note) => {
+      if (note) {
+        response.json(note);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
+});
+
+// Update note
+app.put('/api/notes/:id', (request, response) => {
+  const body = request.body;
+
+  const note = {
+    content: body.content,
+    important: body.important,
   };
 
-  notes = notes.concat(note);
-
-  response.json(note);
+  // the optional { new: true } parameter, which will cause our event handler to be called with the new modified document instead of the original
+  Note.findByIdAndUpdate(request.params.id, note, { new: true })
+    .then((updatedNote) => {
+      response.json(updatedNote);
+    })
+    .catch((error) => next(error));
 });
 
+// Delete note by id
 app.delete('/api/notes/:id', (request, response) => {
-  const id = Number(request.params.id);
-  notes = notes.filter((n) => n.id !== id);
-
-  response.status(204).end();
+  Note.findByIdAndRemove(request.params.id)
+    .then(() => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
-const PORT = process.env.PORT || 3001;
+// Midleware to run after the routes
+// Handler of requests with unknown endpoint
+const unknownEndpoint = (_, response) => {
+  response.status(404).send({ error: 'unknown endpoint' });
+};
+
+app.use(unknownEndpoint);
+
+// Handler of requests with result to errors
+const errorHandler = (error, _, response, next) => {
+  console.log(error.message);
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' });
+  }
+
+  next(error);
+};
+
+app.use(errorHandler);
+
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

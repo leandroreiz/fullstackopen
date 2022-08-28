@@ -1,6 +1,7 @@
-PUT http://localhost:3001/api/notes/630a3a3bfd67dde69eeed56b
+PUT http://localhost:3001/api/notes/630a55dd70ccced45b8b0887
 Content-Type: application/json
 
 {
+  "content": "Mongoose is a great tool",
   "important": true
 }

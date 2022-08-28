@@ -36,21 +36,20 @@ app.get('/info', (_, response) => {
 });
 
 // Create a new entry
-app.post('/api/persons', (request, response) => {
-  const body = request.body;
-
-  if (!body.name || !body.number) {
-    return response.status(400).json({ error: 'please fill all the fields' });
-  }
+app.post('/api/persons', (request, response, next) => {
+  const { name, number } = request.body;
 
   const person = new Person({
-    name: body.name,
-    number: body.number,
+    name,
+    number,
   });
 
-  person.save().then((savedPerson) => {
-    response.status(201).json(savedPerson);
-  });
+  person
+    .save()
+    .then((savedPerson) => {
+      response.status(201).json(savedPerson);
+    })
+    .catch((error) => next(error));
 });
 
 // Read all phonebook entries
@@ -82,6 +81,7 @@ app.put('/api/persons/:id', (request, response, next) => {
 
   Person.findByIdAndUpdate(request.params.id, person, {
     new: true,
+    runValidators: true,
   })
     .then((updatedPerson) => {
       response.json(updatedPerson);
@@ -106,7 +106,14 @@ app.use(unknownEndpoint);
 // Error handler middleware
 const errorHandler = (error, request, response, next) => {
   if (error.name === 'CastError') {
+    console.log('🔴', error.message);
     return response.status(400).send({ error: 'malformatted id' });
+  } else if (error.name === 'ValidationError') {
+    console.log('🔴', error.message);
+    return response.status(400).send({ error: error.message });
+  } else if (error.code === 11000) {
+    console.log('🔴', error.message);
+    return response.status(409).send({ error: error.message });
   }
 
   next(error);

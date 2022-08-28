@@ -55,8 +55,8 @@ const App = () => {
     event.preventDefault();
     const isContact = persons.find((p) => p.name === newName);
 
-    // if contact already exists
     if (isContact) {
+      // if contact already exists
       const { id, name } = isContact;
       if (
         window.confirm(
@@ -73,32 +73,28 @@ const App = () => {
             setNewNumber('');
           })
           .catch((error) => {
-            showNotification(
-              `Information of ${newName} has already been removed from server`,
-              'error'
-            );
-            setPersons(persons.filter((p) => p.id !== id));
+            showNotification(error.response.data.error, 'error');
           });
       }
-      return;
+    } else {
+      // add a new contact
+      phonebookServices
+        .create({
+          name: newName,
+          number: newNumber,
+        })
+        .then((returnedContact) => {
+          setPersons(persons.concat(returnedContact));
+          showNotification(`Added ${returnedContact.name}`, 'success');
+
+          // clear inputs
+          setNewName('');
+          setNewNumber('');
+
+          return returnedContact;
+        })
+        .catch((error) => showNotification(error.response.data.error, 'error'));
     }
-
-    // add a new register
-    phonebookServices
-      .create({
-        name: newName,
-        number: newNumber,
-      })
-      .then((returnedContact) => {
-        setPersons(persons.concat(returnedContact));
-
-        showNotification(`Added ${returnedContact.name}`, 'success');
-
-        // clear inputs
-        setNewName('');
-        setNewNumber('');
-        return returnedContact;
-      });
   };
 
   const handleDelete = (event) => {

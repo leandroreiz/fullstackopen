@@ -1,3 +1,5 @@
+const app = require('../app')
+const request = require('supertest')
 const listHelper = require('../utils/list_helper')
 
 const emptyList = []
@@ -143,5 +145,15 @@ describe('most liked author', () => {
       author: 'Luis Matos',
       likes: 1000
     })
+  })
+})
+
+describe('number of blogs', () => {
+  test('return the total number of blogs recorded', () => {
+    request(app)
+      .get('/api/blogs')
+      .expect('Content-Type', /application\/json/)
+      .expect('Content-Length', biggerList.length.toString())
+      .expect(200)
   })
 })

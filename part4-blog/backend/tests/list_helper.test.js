@@ -1,101 +1,24 @@
 const app = require('../app')
-const request = require('supertest')
+const mongoose = require('mongoose')
+const Blog = require('../models/blog')
+const helper = require('./test_helper')
 const listHelper = require('../utils/list_helper')
+const request = require('supertest')
 
-const emptyList = []
+const api = request(app)
 
-const listWithOneBlog = [
-  {
-    title: 'REST API Design Best Practices Handbook',
-    author: 'Jean-Marc Möckel',
-    url: 'https://www.freecodecamp.org/news/rest-api-design-best-practices-build-a-rest-api/',
-    likes: 22,
-  }
-]
+beforeEach(async () => {
+  await Blog.deleteMany()
 
-const biggerList = [
-  {
-    title: 'REST API Design Best Practices Handbook',
-    author: 'Jean-Marc Möckel',
-    url: 'https://www.freecodecamp.org/news/rest-api-design-best-practices-build-a-rest-api/',
-    likes: 22,
-  },
-  {
-    title: 'Git Commit Best Practices',
-    author: 'Luis Matos',
-    url: 'https://gist.github.com/luismts/495d982e8c5b1a0ced4a57cf3d93cf60',
-    likes: 999,
-  },
-  {
-    title: 'Statements Vs. Expressions',
-    author: 'Josh Comeau',
-    url: 'https://www.joshwcomeau.com/javascript/statements-vs-expressions/',
-    likes: 45,
-  },
-  {
-    title: 'Regular Expressions Cheat Sheet',
-    author: 'Dave Child',
-    url: 'https://cheatography.com/davechild/cheat-sheets/regular-expressions/',
-    likes: 33,
-  },
-  {
-    title: 'Clean Code Best Practices',
-    author: 'Luis Matos',
-    url: 'https://gist.github.com/luismts/495d982e8c5b1a0ced4a57cf3d93cf6e',
-    likes: 1,
-  },
-  {
-    title: 'React Best Practices',
-    author: 'Jean-Marc Möckel',
-    url: 'https://www.freecodecamp.org/news/best-practices-for-react/',
-    likes: 3,
-  },
-  {
-    title: 'Healthy Habits',
-    author: 'Jean-Marc Möckel',
-    url: 'https://www.freecodecamp.org/news/how-to-become-a-better-developer-and-live-a-happier-life/',
-    likes: 7,
-  },
-  {
-    title: 'The Surprising Truth About Pixels and Accessibility',
-    author: 'Josh Comeau',
-    url: 'https://www.joshwcomeau.com/css/surprising-truth-about-pixels-and-accessibility/',
-    likes: 26,
-  },
-  {
-    title: 'How I Landed My First Developer Job Without Writing a Single Application',
-    author: 'Jean-Marc Möckel',
-    url: 'https://www.freecodecamp.org/news/how-i-landed-my-first-developer-job-without-an-application/',
-    likes: 17,
-  },
-  {
-    title: 'Why React Re-Renders',
-    author: 'Josh Comeau',
-    url: 'https://www.joshwcomeau.com/react/why-react-re-renders/',
-    likes: 34,
-  },
-  {
-    title: 'Testing TypeScript apps using Jest',
-    author: 'Ibiyemi Adewakun',
-    url: 'https://blog.logrocket.com/testing-typescript-apps-using-jest/',
-    likes: 5,
-  },
-  {
-    title: 'My Wonderful HTML Email Workflow',
-    author: 'Josh Comeau',
-    url: 'https://www.joshwcomeau.com/react/wonderful-emails-with-mjml-and-mdx/',
-    likes: 51,
-  },
-  {
-    title: 'You Don\'t Need A UI Framework',
-    author: 'Josh Comeau',
-    url: 'https://www.smashingmagazine.com/2022/05/you-dont-need-ui-framework/',
-    likes: 14,
-  }
-]
+  const blogObjects = helper.initialState
+    .map(blog => new Blog(blog))
+
+  const promiseArray = blogObjects.map(blog => blog.save())
+  await Promise.all(promiseArray)
+})
 
 test('dummy return one', () => {
-  const result = listHelper.dummy(emptyList)
+  const result = listHelper.dummy([])
   expect(result).toBe(1)
 })
 
@@ -106,41 +29,27 @@ describe('total likes', () => {
   })
 
   test('when list has only one blog, equals the like of that', () => {
-    const result = listHelper.totalLikes(listWithOneBlog)
-    expect(result).toBe(22)
+    const result = listHelper.totalLikes([helper.initialState[0]])
+    expect(result).toBe(helper.initialState[0].likes)
   })
 
   test('of a bigger list is calculated right', () => {
-    const result = listHelper.totalLikes(biggerList)
+    const result = listHelper.totalLikes(helper.initialState)
     expect(result).toBe(1257)
   })
 })
 
-describe('favorite blog', () => {
-  test('return the blog with most likes', () => {
-    const result = listHelper.favoriteBlog(biggerList)
-    expect(result).toEqual({
-      title: 'Git Commit Best Practices',
-      author: 'Luis Matos',
-      url: 'https://gist.github.com/luismts/495d982e8c5b1a0ced4a57cf3d93cf60',
-      likes: 999,
-    })
-  })
-})
-
-describe('most common author', () => {
-  test('return the author that has more blogs saved', () => {
-    const result = listHelper.mostBlogs(biggerList)
+describe('author', () => {
+  test('that has more blogs saved', () => {
+    const result = listHelper.mostBlogs(helper.initialState)
     expect(result).toEqual({
       author: 'Josh Comeau',
       blogs: 5
     })
   })
-})
 
-describe('most liked author', () => {
-  test('return the author with the most likes among all blogs', () => {
-    const result = listHelper.mostLikes(biggerList)
+  test('with the most likes', () => {
+    const result = listHelper.mostLikes(helper.initialState)
     expect(result).toEqual({
       author: 'Luis Matos',
       likes: 1000
@@ -148,12 +57,55 @@ describe('most liked author', () => {
   })
 })
 
-describe('number of blogs', () => {
-  test('return the total number of blogs recorded', () => {
-    request(app)
+describe('blog', () => {
+  test('with most likes', () => {
+    const result = listHelper.favoriteBlog(helper.initialState)
+    expect(result).toEqual({
+      title: 'Git Commit Best Practices',
+      author: 'Luis Matos',
+      url: 'https://gist.github.com/luismts/495d982e8c5b1a0ced4a57cf3d93cf60',
+      likes: 999,
+    })
+  })
+
+  test('s\' total number', async () => {
+    await api
       .get('/api/blogs')
       .expect('Content-Type', /application\/json/)
-      .expect('Content-Length', biggerList.length.toString())
+      .expect('Content-Length', helper.initialState.length.toString())
       .expect(200)
   })
+
+  test('has a property named id', async () => {
+    const response = await api.get('/api/blogs')
+
+    response.body.forEach(blog => {
+      expect(blog.id).toBeDefined()
+    })
+  })
+
+  test('is successfully created', async () => {
+    const newPost = {
+      title: 'This is a new post',
+      author: 'Test Author',
+      url: 'https://testing.com',
+      likes: 100,
+    }
+
+    api
+      .post('/api/blogs')
+      .send(newPost)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(helper.initialState.length + 1)
+
+    const title = blogsAtEnd.map(b => b.title)
+    expect(title).toContain('This is a new post')
+  })
+})
+
+afterAll(() => {
+  mongoose.connection.close()
 })

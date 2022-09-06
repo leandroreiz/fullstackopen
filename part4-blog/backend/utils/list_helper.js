@@ -1,8 +1,7 @@
 const _ = require('lodash')
 
 const dummy = (blogs) => {
-  console.log(blogs)
-  return 1
+  if (blogs) return 1
 }
 
 const totalLikes = (blogs) => {

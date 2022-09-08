@@ -69,11 +69,8 @@ describe('blog', () => {
   })
 
   test('s\' total number', async () => {
-    await api
-      .get('/api/blogs')
-      .expect('Content-Type', /application\/json/)
-      .expect('Content-Length', helper.initialState.length.toString())
-      .expect(200)
+    const response = await api.get('/api/blogs')
+    expect(response.body).toHaveLength(helper.initialState.length)
   })
 
   test('has a property named id', async () => {
@@ -86,13 +83,13 @@ describe('blog', () => {
 
   test('is successfully created', async () => {
     const newPost = {
-      title: 'This is a new post',
+      title: 'New post created for test purposes',
       author: 'Test Author',
-      url: 'https://testing.com',
-      likes: 100,
+      url: 'https://testingapplication.com',
+      likes: 10,
     }
 
-    api
+    await api
       .post('/api/blogs')
       .send(newPost)
       .expect(201)
@@ -100,9 +97,6 @@ describe('blog', () => {
 
     const blogsAtEnd = await helper.blogsInDb()
     expect(blogsAtEnd).toHaveLength(helper.initialState.length + 1)
-
-    const title = blogsAtEnd.map(b => b.title)
-    expect(title).toContain('This is a new post')
   })
 })
 

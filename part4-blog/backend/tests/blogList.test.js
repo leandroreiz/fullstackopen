@@ -2,7 +2,7 @@ const app = require('../app')
 const mongoose = require('mongoose')
 const Blog = require('../models/blog')
 const helper = require('./test_helper')
-const listHelper = require('../utils/list_helper')
+const listHelper = require('../utils/blogList_helper')
 const request = require('supertest')
 
 const api = request(app)
@@ -15,11 +15,6 @@ beforeEach(async () => {
 
   const promiseArray = blogObjects.map(blog => blog.save())
   await Promise.all(promiseArray)
-})
-
-test('dummy return one', () => {
-  const result = listHelper.dummy([])
-  expect(result).toBe(1)
 })
 
 describe('total likes', () => {
@@ -58,7 +53,7 @@ describe('author', () => {
 })
 
 describe('blog', () => {
-  test('with most likes', () => {
+  test('with most likes is returned', () => {
     const result = listHelper.favoriteBlog(helper.initialState)
     expect(result).toEqual({
       title: 'Git Commit Best Practices',
@@ -68,12 +63,12 @@ describe('blog', () => {
     })
   })
 
-  test('s\' total number', async () => {
+  test('documents returned is equal to all blogs saved', async () => {
     const response = await api.get('/api/blogs')
     expect(response.body).toHaveLength(helper.initialState.length)
   })
 
-  test('has a property named id', async () => {
+  test('object has a property named id', async () => {
     const response = await api.get('/api/blogs')
 
     response.body.forEach(blog => {
@@ -81,7 +76,7 @@ describe('blog', () => {
     })
   })
 
-  test('is successfully created', async () => {
+  test('successfully created', async () => {
     const newPost = {
       title: 'New post created for test purposes',
       author: 'Test Author',
@@ -99,7 +94,7 @@ describe('blog', () => {
     expect(blogsAtEnd).toHaveLength(helper.initialState.length + 1)
   })
 
-  test('likes if not informed, default value equals 0 (zero)', async () => {
+  test('likes is equal to 0 if not informed', async () => {
     const newPost = {
       title: 'New post created for test purposes',
       author: 'Test Author',
@@ -110,7 +105,7 @@ describe('blog', () => {
     expect(response.body.likes).toBe(0)
   })
 
-  test('title and url properties are missing', async () => {
+  test('title and url properties are missing, return status 400', async () => {
     const newPost = {
       title: '',
       author: 'Test Author',
@@ -122,6 +117,31 @@ describe('blog', () => {
       .post('/api/blogs')
       .send(newPost)
       .expect(400)
+  })
+
+  test('is successfully deleted', async () => {
+    const blogsAtStart = await helper.blogsInDb()
+    const blogToDelete = blogsAtStart[0]
+
+    await api
+      .delete(`/api/blogs/${blogToDelete.id}`)
+      .expect(204)
+
+    const blogsAtEnd = await helper.blogsInDb()
+    expect(blogsAtEnd).toHaveLength(helper.initialState.length - 1)
+  })
+
+  test('is successfully updated', async () => {
+    const blogsAtStart = await helper.blogsInDb()
+    const blogToUpdate = blogsAtStart[0]
+
+    const updatedBlog = {
+      likes: 999
+    }
+
+    await api
+      .put(`/api/blogs/${blogToUpdate.id}`, updatedBlog)
+      .expect(200)
   })
 })
 

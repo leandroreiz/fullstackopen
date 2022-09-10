@@ -98,6 +98,31 @@ describe('blog', () => {
     const blogsAtEnd = await helper.blogsInDb()
     expect(blogsAtEnd).toHaveLength(helper.initialState.length + 1)
   })
+
+  test('likes if not informed, default value equals 0 (zero)', async () => {
+    const newPost = {
+      title: 'New post created for test purposes',
+      author: 'Test Author',
+      url: 'https://testingapplication.com',
+    }
+
+    const response = await api.post('/api/blogs').send(newPost)
+    expect(response.body.likes).toBe(0)
+  })
+
+  test('title and url properties are missing', async () => {
+    const newPost = {
+      title: '',
+      author: 'Test Author',
+      url: '',
+      likes: 10,
+    }
+
+    await api
+      .post('/api/blogs')
+      .send(newPost)
+      .expect(400)
+  })
 })
 
 afterAll(() => {
